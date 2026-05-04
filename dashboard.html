@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>People & Culture — Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --navy: #1a2744;
+    --navy2: #243056;
+    --accent: #4f63d2;
+    --accent2: #7c3aed;
+    --green: #059669;
+    --red: #dc2626;
+    --amber: #d97706;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --tag-bg: #f1f5f9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    color: white;
+    padding: 24px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  header p { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 3px; }
+  .header-badge { background: rgba(255,255,255,0.12); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: rgba(255,255,255,0.8); }
+  .container { max-width: 1280px; margin: 0 auto; padding: 28px 24px; }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 32px; }
+  .kpi-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .kpi-card.blue::before { background: var(--accent); }
+  .kpi-card.purple::before { background: var(--accent2); }
+  .kpi-card.green::before { background: var(--green); }
+  .kpi-card.amber::before { background: var(--amber); }
+  .kpi-card.red::before { background: var(--red); }
+  .kpi-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi-value { font-size: 32px; font-weight: 800; margin: 6px 0 4px; letter-spacing: -1px; color: var(--text); }
+  .kpi-sub { font-size: 11px; color: var(--muted); }
+  .kpi-delta { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-top: 4px; }
+  .kpi-delta.up { background: #dcfce7; color: var(--green); }
+  .kpi-delta.down { background: #fee2e2; color: var(--red); }
+  .kpi-delta.neutral { background: #f1f5f9; color: var(--muted); }
+  .charts-row { display: grid; gap: 14px; margin-bottom: 28px; }
+  .charts-2 { grid-template-columns: 1fr 1fr; }
+  .charts-3 { grid-template-columns: 2fr 1fr 1fr; }
+  .charts-half { grid-template-columns: 1fr 1fr; }
+  .chart-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 22px;
+    border: 1px solid var(--border);
+  }
+  .chart-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .chart-sub { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+  .chart-wrap { position: relative; }
+  .demo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .demo-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border);
+  }
+  .demo-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .snapshot-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .snapshot-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .snapshot-period { font-size: 10px; color: var(--muted); }
+  .snapshot-val { font-size: 18px; font-weight: 800; color: var(--text); }
+  .snapshot-change { font-size: 10px; font-weight: 600; }
+  .snapshot-change.up { color: var(--green); }
+  .snapshot-change.down { color: var(--red); }
+  .exit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .exit-item { background: var(--tag-bg); border-radius: 8px; padding: 12px; text-align: center; }
+  .exit-item-val { font-size: 22px; font-weight: 800; color: var(--text); }
+  .exit-item-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+  .donut-wrap { display: flex; align-items: center; gap: 16px; }
+  .donut-canvas { flex-shrink: 0; }
+  .donut-legend { flex: 1; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-val { margin-left: auto; font-weight: 700; font-size: 13px; }
+  .badge { display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: #fef3c7; color: #92400e; letter-spacing: 0.5px; margin-left: 6px; vertical-align: middle; }
+  .equipa-table { width: 100%; border-collapse: collapse; }
+  .equipa-table th { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--border); }
+  .equipa-table td { padding: 8px 8px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .equipa-table tr:last-child td { border-bottom: none; }
+  .bar-mini { height: 6px; border-radius: 3px; background: var(--accent); display: inline-block; }
+  footer { text-align: center; padding: 20px; font-size: 11px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>People &amp; Culture — Dashboard</h1>
+    <p>Métricas de equipa · Jan 2024 – Fev 2026</p>
+  </div>
+  <div class="header-badge">Atualizado: Abril 2026</div>
+</header>
+<div class="container">
+  <div class="section-title">Visão Geral</div>
+  <div class="kpi-grid" id="kpi-grid"></div>
+  <div class="section-title">Movimentos <span class="badge">mensal</span></div>
+  <div class="charts-row charts-2" style="margin-bottom:14px;">
+    <div class="chart-card">
+      <div class="chart-title">Entradas vs Saídas</div>
+      <div class="chart-sub">Por mês · 2024–2026</div>
+      <div class="chart-wrap"><canvas id="movChart" height="200"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Evolução do Headcount</div>
+      <div class="chart-sub">Pessoas na equipa · pontos semestrais + mensais</div>
+      <div class="chart-wrap"><canvas id="headcountChart" height="200"></canvas></div>
+    </div>
+  </div>
+  <div class="charts-row" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:28px;">
+    <div class="chart-card">
+      <div class="chart-title">Tipo de Saídas</div>
+      <div class="chart-sub">Total acumulado · todos os períodos</div>
+      <div class="exit-grid" id="exit-breakdown"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Saídas Involuntárias</div>
+      <div class="chart-sub">Por mês · dismissals</div>
+      <div class="chart-wrap"><canvas id="exitInvChart" height="180"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Saídas Precoces vs Tardias</div>
+      <div class="chart-sub">Primeiros 6 meses vs depois de 2 anos</div>
+      <div class="chart-wrap"><canvas id="exitCompareChart" height="180"></canvas></div>
+    </div>
+  </div>
+  <div class="section-title">Recrutamento <span class="badge">mensal</span></div>
+  <div class="charts-row charts-2" style="margin-bottom:14px;">
+    <div class="chart-card">
+      <div class="chart-title">Sourcing &amp; Hires</div>
+      <div class="chart-sub">Pessoas sourced (eixo esq.) e contratações (eixo dir.)</div>
+      <div class="chart-wrap"><canvas id="recruitChart" height="200"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Taxa de Conversão do Sourcing</div>
+      <div class="chart-sub">Candidatos sourced que avançaram · %</div>
+      <div class="chart-wrap"><canvas id="conversionChart" height="200"></canvas></div>
+    </div>
+  </div>
+  <div class="charts-row" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:28px;">
+    <div class="chart-card">
+      <div class="chart-title">Time to Fill <span class="badge">semestral</span></div>
+      <div class="chart-sub">Semanas · por semestre</div>
+      <div class="chart-wrap"><canvas id="ttfChart" height="160"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Time to Hire <span class="badge">semestral</span></div>
+      <div class="chart-sub">Dias · por semestre</div>
+      <div class="chart-wrap"><canvas id="tthChart" height="160"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Vagas Abertas</div>
+      <div class="chart-sub">Openings por mês</div>
+      <div class="chart-wrap"><canvas id="openingsChart" height="160"></canvas></div>
+    </div>
+  </div>
+  <div class="section-title">Desenvolvimento <span class="badge">mensal</span></div>
+  <div class="charts-row charts-2" style="margin-bottom:28px;">
+    <div class="chart-card">
+      <div class="chart-title">Bónus de Performance</div>
+      <div class="chart-sub">Número de bónus atribuídos por mês</div>
+      <div class="chart-wrap"><canvas id="bonusChart" height="180"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Aumentos &amp; Promoções</div>
+      <div class="chart-sub">Por mês · 2024–2026</div>
+      <div class="chart-wrap"><canvas id="growthChart" height="180"></canvas></div>
+    </div>
+  </div>
+  <div class="section-title">Equipa <span class="badge">semestral</span></div>
+  <div class="charts-row" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr; margin-bottom:14px;">
+    <div class="chart-card">
+      <div class="chart-title">Composição por Nível</div>
+      <div class="chart-sub">Última snapshot · Dez 2025</div>
+      <div class="donut-wrap" style="margin-top:12px;" id="levelDonut"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Género · Total</div>
+      <div class="chart-sub">Evolução semestral</div>
+      <div class="chart-wrap" style="margin-top:8px;"><canvas id="genderChart" height="200"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Género · Liderança vs ICs</div>
+      <div class="chart-sub">% Mulheres por nível · semestral</div>
+      <div class="chart-wrap" style="margin-top:8px;"><canvas id="genderLeadChart" height="200"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Internacionalidade</div>
+      <div class="chart-sub">PT Based vs Internationals</div>
+      <div class="chart-wrap" style="margin-top:8px;"><canvas id="intlChart" height="200"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Snapshots Chave</div>
+      <div class="chart-sub">Evolução de indicadores</div>
+      <div id="snapshotCards" style="margin-top:8px;"></div>
+    </div>
+  </div>
+  <div class="charts-row" style="grid-template-columns: 1fr 1fr; margin-bottom:28px;">
+    <div class="chart-card">
+      <div class="chart-title">Equipa por Departamento</div>
+      <div class="chart-sub">Headcount · Jun 2025 vs Dez 2025</div>
+      <table class="equipa-table" id="equipaTable" style="margin-top:12px;"></table>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Distribuição da Equipa · Dez 2025</div>
+      <div class="chart-sub">% por departamento</div>
+      <div class="chart-wrap"><canvas id="deptChart" height="200"></canvas></div>
+    </div>
+  </div>
+  <div class="section-title">Tenure <span class="badge">semestral</span></div>
+  <div class="charts-row" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:28px;">
+    <div class="chart-card" style="grid-column: span 2;">
+      <div class="chart-title">Evolução da Tenure Média</div>
+      <div class="chart-sub">Anos de permanência média · por semestre</div>
+      <div class="chart-wrap"><canvas id="tenureChart" height="160"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Tenure por Departamento</div>
+      <div class="chart-sub">Snapshot Dez 2025 · anos</div>
+      <div id="tenureByDept" style="margin-top:8px;"></div>
+    </div>
+  </div>
+  <div class="section-title">Employer Brand &amp; CX <span class="badge">mensal</span></div>
+  <div class="charts-row" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:28px;">
+    <div class="chart-card">
+      <div class="chart-title">LinkedIn Followers</div>
+      <div class="chart-sub">Crescimento de seguidores · 2025–2026</div>
+      <div class="chart-wrap"><canvas id="linkedinChart" height="180"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">eNPS Candidatos (CX)</div>
+      <div class="chart-sub">eNPS médio (linha) · nº reviews CX por mês (barras)</div>
+      <div class="chart-wrap"><canvas id="enpsChart" height="180"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Glassdoor</div>
+      <div class="chart-sub">Rating atual e evolução de reviews</div>
+      <div id="glassdoorKpi" style="margin:12px 0 16px;"></div>
+      <div class="chart-wrap"><canvas id="glassdoorChart" height="120"></canvas></div>
+    </div>
+  </div>
+</div>
+<footer>People &amp; Culture Dashboard · Rita · Dados: Jan 2024 – Fev 2026</footer>
+<script>
+const CSV_URLS = [
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuZUuo_IB2MXQvJc3kX2XjQ26pbEXlwd2BfkzLlB6AdQOaurY1LVHgRl99dgJQIwH_BFmU8c-b2-Yw/pub?gid=1050964482&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuZUuo_IB2MXQvJc3kX2XjQ26pbEXlwd2BfkzLlB6AdQOaurY1LVHgRl99dgJQIwH_BFmU8c-b2-Yw/pub?gid=671693462&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuZUuo_IB2MXQvJc3kX2XjQ26pbEXlwd2BfkzLlB6AdQOaurY1LVHgRl99dgJQIwH_BFmU8c-b2-Yw/pub?gid=1454437300&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuZUuo_IB2MXQvJc3kX2XjQ26pbEXlwd2BfkzLlB6AdQOaurY1LVHgRl99dgJQIwH_BFmU8c-b2-Yw/pub?gid=1462354460&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuZUuo_IB2MXQvJc3kX2XjQ26pbEXlwd2BfkzLlB6AdQOaurY1LVHgRl99dgJQIwH_BFmU8c-b2-Yw/pub?gid=1915039192&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuZUuo_IB2MXQvJc3kX2XjQ26pbEXlwd2BfkzLlB6AdQOaurY1LVHgRl99dgJQIwH_BFmU8c-b2-Yw/pub?gid=44783408&single=true&output=csv',
+];
+
+document.body.insertAdjacentHTML('afterbegin', `
+  <div id="loading-overlay" style="position:fixed;inset:0;background:rgba(26,39,68,0.97);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-family:-apple-system,sans-serif;">
+    <div style="font-size:22px;font-weight:700;margin-bottom:10px;">A carregar dados...</div>
+    <div style="font-size:13px;opacity:0.55;">A ler a tua Google Sheet</div>
+  </div>`);
+
+function parseCSV(text) {
+  const rows = [];
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    const cells = []; let inQ = false, cell = '';
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { cells.push(cell.trim()); cell = ''; }
+      else { cell += c; }
+    }
+    cells.push(cell.trim());
+    rows.push(cells);
+  }
+  return rows;
+}
+
+const EMPTY = new Set(['', '-', 'nan', 'nat', '#n/a', 'xx', 'undefined', 'null']);
+function isEmpty(v) { return v == null || EMPTY.has(String(v).trim().toLowerCase()); }
+function toMonth(s) {
+  if (isEmpty(s)) return null;
+  s = s.trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,7);
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return `${m[3]}-${m[2].padStart(2,'0')}`;
+  const ptMonths = {
+    'janeiro':'01','fevereiro':'02','março':'03','abril':'04',
+    'maio':'05','junho':'06','julho':'07','agosto':'08',
+    'setembro':'09','outubro':'10','novembro':'11','dezembro':'12'
+  };
+  const pm = s.toLowerCase().match(/^([a-záéíóúâêîôûãõç]+)\s+(\d{4})/);
+  if (pm && ptMonths[pm[1]]) return `${pm[2]}-${ptMonths[pm[1]]}`;
+  return null;
+}
+function si(v) { if (isEmpty(v)) return 0; const n = parseFloat(v); return isNaN(n) ? 0 : Math.round(n); }
+function sf(v) { if (isEmpty(v)) return null; const n = parseFloat(v); return isNaN(n) ? null : Math.round(n*10000)/10000; }
+function sin(v) { const r = si(v); return r > 0 ? r : null; }
+
+function parseMovements(rows) {
+  const data = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i], month = toMonth(r[0]);
+    if (!month) continue;
+    data.push({ month, entradas:si(r[1]), saidas:si(r[2]), saidas_3m:si(r[3]),
+      saidas_6m:si(r[4]), saidas_2a:si(r[5]), saidas_inv:si(r[6]),
+      headcount:sin(r[7]), turnover:sf(r[9]) });
+  }
+  return data;
+}
+function parseDemographics(rows) {
+  const data = [];
+  for (let i = 2; i < rows.length; i++) {
+    const r = rows[i], period = toMonth(r[0]);
+    if (!period) continue;
+    data.push({ period, managers:sin(r[1]), leads:sin(r[2]), ics:sin(r[3]),
+      homens:sin(r[4]), mulheres:sin(r[5]), manager_mulheres:sin(r[6]),
+      managers_homens:sin(r[7]), idade_media:sf(r[8]),
+      internationals:sin(r[9]), pt_based:sin(r[10]),
+      countries:sin(r[11]), nationalities:sin(r[12]) });
+  }
+  return data;
+}
+function parseEquipa(rows) {
+  const data = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i], period = toMonth(r[0]);
+    if (!period) continue;
+    data.push({ period, 'iGaming Sports':si(r[1]), 'iGaming Crypto':si(r[2]),
+      'Tech':si(r[3]), 'Loans':si(r[4]), 'Labs':si(r[5]),
+      'P&C':si(r[6]), 'Sales':si(r[7]), 'Finance':si(r[8]), 'Design':si(r[9]) });
+  }
+  return data;
+}
+function parseGrowth(rows) {
+  const data = [];
+  for (let i = 2; i < rows.length; i++) {
+    const r = rows[i], month = toMonth(r[0]);
+    if (!month) continue;
+    data.push({ month, bonus:si(r[1]), aumentos:si(r[2]), promocoes:si(r[3]) });
+  }
+  return data;
+}
+function parseRecruitment(rows) {
+  const monthly = [], semirec = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const month = toMonth(r[0]);
+    if (month) monthly.push({ month, sourced:sin(r[1]), hires:sin(r[8]),
+      openings:sin(r[6]), conversao:sf(r[3]), ofertas:sin(r[7]),
+      time_to_fill:null, time_to_hire:null });
+    const sp = toMonth(r[12]);
+    if (sp) semirec.push({ period:sp, ttf:sf(r[26]), tth:sf(r[27]) });
+  }
+  return { monthly, semirec };
+}
+function parseEbCx(rows) {
+  const data = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i], month = toMonth(r[0]);
+    if (!month) continue;
+    data.push({ month, linkedin_followers:sin(r[5]), glassdoor_reviews:sin(r[7]),
+      glassdoor_rate:sf(r[8]), reviews_cx:si(r[9]), enps_media:sf(r[10]) || 0 });
+  }
+  return data;
+}
+function identifyAndParse(text) {
+  const rows = parseCSV(text);
+  const flat = rows.slice(0,4).flat().join('|');
+  if (flat.includes('Entradas')) return { type:'movements', data:parseMovements(rows) };
+  if (flat.includes('iGaming Sports')) return { type:'equipa', data:parseEquipa(rows) };
+  if (flat.includes('Department Managers')) return { type:'demographics', data:parseDemographics(rows) };
+  if (flat.toLowerCase().includes('bonus performance') || flat.includes('Bónus Performance')) return { type:'growth', data:parseGrowth(rows) };
+  if (flat.includes('People Sourced')) { const d = parseRecruitment(rows); return { type:'recruitment', data:d }; }
+  if (flat.includes('Candidatos Aproveitados') || flat.includes('Linkedin Followers')) return { type:'eb_cx', data:parseEbCx(rows) };
+  return { type:'unknown', data:null };
+}
+
+async function loadData() {
+  const texts = await Promise.all(CSV_URLS.map(url => fetch(url).then(r => {
+    if (!r.ok) throw new Error(`Erro HTTP ${r.status}`);
+    return r.text();
+  })));
+  const DATA = { movements:[], growth:[], recruitment:[], semirec:[], demographics:[], equipa:[], eb_cx:[] };
+  for (const text of texts) {
+    const { type, data } = identifyAndParse(text);
+    if (type === 'movements') DATA.movements = data;
+    else if (type === 'growth') DATA.growth = data;
+    else if (type === 'recruitment') { DATA.recruitment = data.monthly; DATA.semirec = data.semirec; }
+    else if (type === 'demographics') DATA.demographics = data;
+    else if (type === 'equipa') DATA.equipa = data;
+    else if (type === 'eb_cx') DATA.eb_cx = data;
+  }
+  return DATA;
+}
+
+function buildCharts(DATA) {
+  const COLORS = {
+    accent: '#4f63d2', accent2: '#7c3aed', green: '#059669', red: '#dc2626',
+    amber: '#d97706', pink: '#db2777', teal: '#0891b2', orange: '#ea580c', slate: '#64748b',
+  };
+  function fmtMonth(m) {
+    const [y, mo] = m.split('-');
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    return months[parseInt(mo)-1] + ' ' + y.slice(2);
+  }
+  function makeChart(id, config) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    return new Chart(ctx, config);
+  }
+  const baseChartOpts = {
+    responsive: true,
+    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#94a3b8' } },
+      y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, color: '#94a3b8' } }
+    }
+  };
+
+  // KPI CARDS
+  const mov = DATA.movements;
+  const lastHc = [...mov].reverse().find(d => d.headcount !== null);
+  const prevHc = [...mov].reverse().slice(1).find(d => d.headcount !== null);
+  const totalExits2025 = mov.filter(d => d.month.startsWith('2025')).reduce((s,d) => s+d.saidas, 0);
+  const totalExits2024 = mov.filter(d => d.month.startsWith('2024')).reduce((s,d) => s+d.saidas, 0);
+  const latestOpenings = [...DATA.recruitment].reverse().find(d => d.openings !== null);
+  const ttfData = DATA.semirec.filter(d => d.ttf !== null);
+  const avgTTF = ttfData.length ? (ttfData.reduce((s,d) => s+d.ttf, 0)/ttfData.length).toFixed(1) : '—';
+  const lastLinkedin = DATA.eb_cx[DATA.eb_cx.length-1];
+  const firstLinkedin = DATA.eb_cx[0];
+  const linkedinGrowth = lastLinkedin && firstLinkedin ? lastLinkedin.linkedin_followers - firstLinkedin.linkedin_followers : 0;
+  const hcChange = lastHc && prevHc ? lastHc.headcount - prevHc.headcount : 0;
+  const inv2025 = mov.filter(d => d.month.startsWith('2025')).reduce((s,d) => s+d.saidas_inv, 0);
+  const pctInv2025 = totalExits2025 > 0 ? Math.round((inv2025 / totalExits2025) * 100) : 0;
+  const kpis = [
+    { label: 'Headcount Atual', value: lastHc ? lastHc.headcount : '—', sub: lastHc ? lastHc.month : '', delta: hcChange !== 0 ? (hcChange > 0 ? `+${hcChange} vs mês ant.` : `${hcChange} vs mês ant.`) : null, deltaDir: hcChange >= 0 ? 'up' : 'down', color: 'blue' },
+    { label: 'Saídas 2025', value: totalExits2025, sub: `vs ${totalExits2024} em 2024`, delta: totalExits2025 < totalExits2024 ? '↓ menos saídas' : '↑ mais saídas', deltaDir: totalExits2025 <= totalExits2024 ? 'up' : 'down', color: 'purple' },
+    { label: '% Involuntárias 2025', value: pctInv2025 + '%', sub: `${inv2025} de ${totalExits2025} saídas`, delta: pctInv2025 >= 50 ? '⚠ maioria dismissals' : null, deltaDir: 'down', color: 'red' },
+    { label: 'Vagas Abertas', value: latestOpenings ? latestOpenings.openings : '—', sub: latestOpenings ? latestOpenings.month : '', delta: null, deltaDir: 'neutral', color: 'amber' },
+    { label: 'Time to Fill', value: avgTTF + ' sem', sub: 'média semestral', delta: null, deltaDir: 'neutral', color: 'green' },
+    { label: 'LinkedIn Followers', value: lastLinkedin ? lastLinkedin.linkedin_followers.toLocaleString('pt') : '—', sub: `+${linkedinGrowth.toLocaleString('pt')} desde Abr 2025`, delta: null, deltaDir: 'up', color: 'red' },
+  ];
+  const kpiGrid = document.getElementById('kpi-grid');
+  kpis.forEach(k => {
+    kpiGrid.innerHTML += `<div class="kpi-card ${k.color}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div>${k.delta ? `<div class="kpi-delta ${k.deltaDir}">${k.delta}</div>` : ''}</div>`;
+  });
+
+  // MOVEMENTS
+  const movLabels = mov.map(d => fmtMonth(d.month));
+  makeChart('movChart', { type:'bar', data:{ labels:movLabels, datasets:[
+    { label:'Entradas', data:mov.map(d=>d.entradas), backgroundColor:COLORS.green+'cc', borderRadius:3 },
+    { label:'Saídas', data:mov.map(d=>-d.saidas), backgroundColor:COLORS.red+'cc', borderRadius:3 },
+  ]}, options:{ ...baseChartOpts, plugins:{ legend:{ display:true, position:'top', labels:{ font:{size:11}, usePointStyle:true, pointStyleWidth:8 } }, tooltip:{ mode:'index', intersect:false, callbacks:{ label:ctx=>`${ctx.dataset.label}: ${Math.abs(ctx.raw)}` } } }, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',callback:v=>Math.abs(v)} } } }});
+  const hcPoints = mov.filter(d => d.headcount !== null);
+  makeChart('headcountChart', { type:'line', data:{ labels:hcPoints.map(d=>fmtMonth(d.month)), datasets:[{ label:'Headcount', data:hcPoints.map(d=>d.headcount), borderColor:COLORS.accent, backgroundColor:COLORS.accent+'22', fill:true, tension:0.3, pointRadius:4, pointHoverRadius:6 }]}, options:{ ...baseChartOpts, scales:{ x:{ grid:{display:false}, ticks:{font:{size:10},color:'#94a3b8'} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8'}, suggestedMin:35, suggestedMax:55 } } }});
+
+  // EXIT BREAKDOWN
+  const totalExits = mov.reduce((s,d)=>s+d.saidas,0);
+  const total3m = mov.reduce((s,d)=>s+d.saidas_3m,0);
+  const total6m = mov.reduce((s,d)=>s+d.saidas_6m,0);
+  const total2a = mov.reduce((s,d)=>s+d.saidas_2a,0);
+  const totalInv = mov.reduce((s,d)=>s+d.saidas_inv,0);
+  document.getElementById('exit-breakdown').innerHTML = `
+    <div class="exit-item"><div class="exit-item-val">${totalExits}</div><div class="exit-item-lbl">Total Saídas</div></div>
+    <div class="exit-item"><div class="exit-item-val" style="color:${COLORS.amber}">${totalInv}</div><div class="exit-item-lbl">Involuntárias</div></div>
+    <div class="exit-item"><div class="exit-item-val" style="color:${COLORS.red}">${total3m}</div><div class="exit-item-lbl">Primeiros 3m</div></div>
+    <div class="exit-item"><div class="exit-item-val" style="color:${COLORS.orange}">${total6m}</div><div class="exit-item-lbl">Primeiros 6m</div></div>
+    <div class="exit-item"><div class="exit-item-val" style="color:${COLORS.slate}">${total2a}</div><div class="exit-item-lbl">Após 2 anos</div></div>
+    <div class="exit-item"><div class="exit-item-val" style="color:${COLORS.accent}">${Math.round((totalInv/totalExits)*100)||0}%</div><div class="exit-item-lbl">% Involuntárias</div></div>`;
+  makeChart('exitInvChart', { type:'bar', data:{ labels:movLabels, datasets:[
+    { label:'Total Saídas', data:mov.map(d=>d.saidas), backgroundColor:COLORS.slate+'55', borderRadius:3 },
+    { label:'Involuntárias', data:mov.map(d=>d.saidas_inv), backgroundColor:COLORS.amber+'ee', borderRadius:3 },
+  ]}, options:{ ...baseChartOpts, plugins:{ legend:{ display:true, position:'top', labels:{ font:{size:10}, usePointStyle:true } }, tooltip:{ mode:'index', intersect:false } }, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',stepSize:1} } } }});
+  makeChart('exitCompareChart', { type:'bar', data:{ labels:movLabels, datasets:[
+    { label:'Primeiros 6m', data:mov.map(d=>d.saidas_6m), backgroundColor:COLORS.red+'cc', borderRadius:3 },
+    { label:'Após 2 anos', data:mov.map(d=>d.saidas_2a), backgroundColor:COLORS.accent+'cc', borderRadius:3 },
+  ]}, options:{ ...baseChartOpts, plugins:{ legend:{ display:true, position:'top', labels:{ font:{size:10}, usePointStyle:true } }, tooltip:{ mode:'index', intersect:false } }, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',stepSize:1} } } }});
+
+  // RECRUITMENT
+  const rec = DATA.recruitment;
+  const recLabels = rec.map(d => fmtMonth(d.month));
+  makeChart('recruitChart', { type:'bar', data:{ labels:recLabels, datasets:[
+    { label:'Sourced', data:rec.map(d=>d.sourced), backgroundColor:COLORS.accent+'55', borderRadius:3, yAxisID:'y' },
+    { label:'Hires', data:rec.map(d=>d.hires), backgroundColor:COLORS.green, borderRadius:3, yAxisID:'y2', type:'bar' },
+  ]}, options:{ responsive:true, plugins:{ legend:{ display:true, position:'top', labels:{ font:{size:11}, usePointStyle:true } }, tooltip:{ mode:'index', intersect:false } }, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8'}, title:{ display:true, text:'Sourced', font:{size:10}, color:'#94a3b8' } }, y2:{ position:'right', grid:{display:false}, ticks:{font:{size:10},color:'#94a3b8',stepSize:1}, title:{ display:true, text:'Hires', font:{size:10}, color:'#94a3b8' } } } }});
+  makeChart('conversionChart', { type:'line', data:{ labels:recLabels, datasets:[{ label:'Conversão (%)', data:rec.map(d=>d.conversao!==null?(d.conversao*100).toFixed(1):null), borderColor:COLORS.accent2, backgroundColor:COLORS.accent2+'22', fill:true, tension:0.3, pointRadius:3, spanGaps:true }]}, options:{ ...baseChartOpts, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',callback:v=>v+'%'} } } }});
+  const sr = DATA.semirec.filter(d => d.ttf || d.tth);
+  const srLabels = sr.map(d => { const [y,m]=d.period.split('-'); return (m==='06'?'Jun ':'Dez ')+y.slice(2); });
+  makeChart('ttfChart', { type:'bar', data:{ labels:srLabels, datasets:[{ label:'Semanas', data:sr.map(d=>d.ttf), backgroundColor:sr.map((_,i)=>i===sr.length-1?COLORS.teal:COLORS.teal+'bb'), borderRadius:5 }]}, options:{ ...baseChartOpts, scales:{ x:{ grid:{display:false}, ticks:{font:{size:11},color:'#94a3b8'} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8'}, suggestedMin:8 } }, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>ctx.raw+' semanas' } } } }});
+  makeChart('tthChart', { type:'bar', data:{ labels:srLabels, datasets:[{ label:'Dias', data:sr.map(d=>d.tth), backgroundColor:sr.map((_,i)=>i===sr.length-1?COLORS.orange:COLORS.orange+'bb'), borderRadius:5 }]}, options:{ ...baseChartOpts, scales:{ x:{ grid:{display:false}, ticks:{font:{size:11},color:'#94a3b8'} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8'}, suggestedMin:20 } }, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>ctx.raw+' dias' } } } }});
+  const openPoints = rec.filter(d => d.openings !== null);
+  makeChart('openingsChart', { type:'bar', data:{ labels:openPoints.map(d=>fmtMonth(d.month)), datasets:[{ label:'Vagas', data:openPoints.map(d=>d.openings), backgroundColor:COLORS.amber+'cc', borderRadius:4 }]}, options:{ ...baseChartOpts, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',stepSize:1} } } }});
+
+  // GROWTH
+  const gr = DATA.growth;
+  const grLabels = gr.map(d => fmtMonth(d.month));
+  makeChart('bonusChart', { type:'bar', data:{ labels:grLabels, datasets:[{ label:'Bónus Performance', data:gr.map(d=>d.bonus), backgroundColor:COLORS.accent2+'cc', borderRadius:4 }]}, options:{ ...baseChartOpts, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',stepSize:1} } } }});
+  makeChart('growthChart', { type:'bar', data:{ labels:grLabels, datasets:[
+    { label:'Aumentos', data:gr.map(d=>d.aumentos), backgroundColor:COLORS.green+'cc', borderRadius:3 },
+    { label:'Promoções', data:gr.map(d=>d.promocoes), backgroundColor:COLORS.accent+'cc', borderRadius:3 },
+  ]}, options:{ ...baseChartOpts, plugins:{ legend:{ display:true, position:'top', labels:{ font:{size:11}, usePointStyle:true } }, tooltip:{ mode:'index', intersect:false } }, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',stepSize:1} } } }});
+
+  // DEMOGRAPHICS
+  const demo = DATA.demographics;
+  const lastDemo = demo[demo.length - 1];
+  const levelEl = document.getElementById('levelDonut');
+  if (lastDemo && levelEl) {
+    const donutColors = [COLORS.accent, COLORS.teal, COLORS.slate];
+    levelEl.innerHTML = `<canvas class="donut-canvas" id="levelDonutCanvas" width="100" height="100"></canvas><div class="donut-legend"><div class="legend-item"><span class="legend-dot" style="background:${donutColors[0]}"></span>Managers<span class="legend-val">${lastDemo.managers||0}</span></div><div class="legend-item"><span class="legend-dot" style="background:${donutColors[1]}"></span>Leads<span class="legend-val">${lastDemo.leads||0}</span></div><div class="legend-item"><span class="legend-dot" style="background:${donutColors[2]}"></span>ICs<span class="legend-val">${lastDemo.ics||0}</span></div></div>`;
+    new Chart(document.getElementById('levelDonutCanvas'), { type:'doughnut', data:{ labels:['Managers','Leads','ICs'], datasets:[{ data:[lastDemo.managers,lastDemo.leads,lastDemo.ics], backgroundColor:donutColors, borderWidth:2, borderColor:'#fff' }]}, options:{ responsive:false, plugins:{ legend:{ display:false } }, cutout:'65%' }});
+  }
+  const demoLabels = demo.map(d => { const [y,m]=d.period.split('-'); return (m==='06'?'Jun ':'Dez ')+y.slice(2); });
+  makeChart('genderChart', { type:'bar', data:{ labels:demoLabels, datasets:[
+    { label:'Homens', data:demo.map(d=>d.homens), backgroundColor:COLORS.accent+'cc', borderRadius:4 },
+    { label:'Mulheres', data:demo.map(d=>d.mulheres), backgroundColor:COLORS.pink+'cc', borderRadius:4 },
+  ]}, options:{ ...baseChartOpts, plugins:{ legend:{ display:true, position:'top', labels:{ font:{size:10}, usePointStyle:true } }, tooltip:{ mode:'index', intersect:false } }, scales:{ x:{ grid:{display:false}, ticks:{font:{size:10},color:'#94a3b8'} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',stepSize:5} } } }});
+  makeChart('genderLeadChart', { type:'line', data:{ labels:demoLabels, datasets:[
+    { label:'% Mulheres em Liderança', data:demo.map(d=>{ const t=(d.manager_mulheres||0)+(d.managers_homens||0); return t>0?Math.round(((d.manager_mulheres||0)/t)*100):null; }), borderColor:COLORS.pink, backgroundColor:'transparent', fill:false, tension:0.3, pointRadius:6, borderWidth:2.5 },
+    { label:'% Mulheres em ICs', data:demo.map(d=>{ const iw=(d.mulheres||0)-(d.manager_mulheres||0); const im=(d.homens||0)-(d.managers_homens||0); const t=iw+im; return t>0?Math.round((iw/t)*100):null; }), borderColor:COLORS.accent, backgroundColor:'transparent', fill:false, tension:0.3, pointRadius:6, borderWidth:2.5, borderDash:[5,3] },
+  ]}, options:{ ...baseChartOpts, plugins:{ legend:{ display:true, position:'top', labels:{ font:{size:10}, usePointStyle:true } }, tooltip:{ mode:'index', intersect:false, callbacks:{ label:ctx=>ctx.dataset.label+': '+ctx.raw+'%' } } }, scales:{ x:{ grid:{display:false}, ticks:{font:{size:10},color:'#94a3b8'} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',callback:v=>v+'%'}, suggestedMin:0, suggestedMax:100 } } }});
+  makeChart('intlChart', { type:'bar', data:{ labels:demoLabels, datasets:[
+    { label:'PT Based', data:demo.map(d=>d.pt_based), backgroundColor:COLORS.green+'cc', borderRadius:4 },
+    { label:'Internationals', data:demo.map(d=>d.internationals), backgroundColor:COLORS.teal+'cc', borderRadius:4 },
+  ]}, options:{ ...baseChartOpts, plugins:{ legend:{ display:true, position:'top', labels:{ font:{size:10}, usePointStyle:true } }, tooltip:{ mode:'index', intersect:false } }, scales:{ x:{ grid:{display:false}, ticks:{font:{size:10},color:'#94a3b8'} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',stepSize:5} } } }});
+  const snapEl = document.getElementById('snapshotCards');
+  [{ label:'Idade Média', vals:demo.map(d=>d.idade_media?.toFixed(1)) },
+   { label:'Países', vals:demo.map(d=>d.countries) },
+   { label:'Nacionalidades', vals:demo.map(d=>d.nationalities) }].forEach(s => {
+    const first=s.vals[0], last=s.vals[s.vals.length-1];
+    const change=parseFloat(last)-parseFloat(first); const dir=change>0?'up':change<0?'down':'';
+    snapEl.innerHTML += `<div class="snapshot-row"><div><div style="font-size:11px;font-weight:600;color:var(--text)">${s.label}</div><div class="snapshot-period">${demo[0]?.period} → ${demo[demo.length-1]?.period}</div></div><div style="text-align:right"><div class="snapshot-val">${last}</div>${change!==0?`<div class="snapshot-change ${dir}">${change>0?'+':''}${Math.round(change*100)/100}</div>`:''}</div></div>`;
+  });
+
+  // EQUIPA TABLE
+  const eq = DATA.equipa;
+  const depts = ['iGaming Sports','iGaming Crypto','Tech','Loans','Labs','P&C','Sales','Finance','Design'];
+  let tableHtml = `<thead><tr><th>Departamento</th><th>${eq[0]?.period||''}</th><th>${eq[1]?.period||''}</th><th>Δ</th></tr></thead><tbody>`;
+  depts.forEach(dept => {
+    const v1=eq[0]?.[dept]||0, v2=eq[1]?.[dept]||0; const change=v2-v1;
+    const arrow=change>0?`<span style="color:${COLORS.green}">+${change}</span>`:change<0?`<span style="color:${COLORS.red}">${change}</span>`:'<span style="color:#94a3b8">—</span>';
+    tableHtml += `<tr><td style="font-weight:600">${dept}</td><td>${v1}</td><td>${v2}</td><td>${arrow}</td></tr>`;
+  });
+  tableHtml += '</tbody>';
+  document.getElementById('equipaTable').innerHTML = tableHtml;
+  if (eq.length > 0) {
+    const lastEq = eq[eq.length-1];
+    const deptColors = [COLORS.accent,COLORS.teal,COLORS.green,COLORS.amber,COLORS.accent2,COLORS.pink,COLORS.orange,COLORS.red,COLORS.slate];
+    makeChart('deptChart', { type:'doughnut', data:{ labels:depts, datasets:[{ data:depts.map(d=>lastEq[d]||0), backgroundColor:deptColors, borderWidth:2, borderColor:'#fff' }]}, options:{ responsive:true, plugins:{ legend:{ display:true, position:'right', labels:{ font:{size:10}, usePointStyle:true, pointStyleWidth:8 } } }, cutout:'55%' }});
+  }
+
+  // TENURE
+  const tenureData = [
+    {period:'Jun 24',tenure:1.55},{period:'Dez 24',tenure:1.98},
+    {period:'Jun 25',tenure:2.30},{period:'Dez 25',tenure:2.60},
+  ];
+  makeChart('tenureChart', { type:'line', data:{ labels:tenureData.map(d=>d.period), datasets:[{ label:'Tenure Média (anos)', data:tenureData.map(d=>d.tenure), borderColor:COLORS.teal, backgroundColor:COLORS.teal+'22', fill:true, tension:0.3, pointRadius:6, pointHoverRadius:8, borderWidth:2.5 }]}, options:{ ...baseChartOpts, scales:{ x:{ grid:{display:false}, ticks:{font:{size:11},color:'#94a3b8'} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',callback:v=>v+' anos'}, suggestedMin:1, suggestedMax:3 } } }});
+  const tenureByDeptData = [
+    {dept:'Tech',tenure:3.1},{dept:'iGaming Sports',tenure:2.8},{dept:'Finance',tenure:2.5},
+    {dept:'P&C',tenure:2.2},{dept:'iGaming Crypto',tenure:1.9},{dept:'Sales',tenure:1.7},
+    {dept:'Labs',tenure:1.5},{dept:'Loans',tenure:1.3},{dept:'Design',tenure:1.1},
+  ];
+  const tenureEl = document.getElementById('tenureByDept');
+  const maxTenure = Math.max(...tenureByDeptData.map(d=>d.tenure));
+  tenureByDeptData.forEach(d => {
+    const pct = Math.round((d.tenure/maxTenure)*100);
+    tenureEl.innerHTML += `<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;"><span style="font-weight:600">${d.dept}</span><span style="color:var(--muted)">${d.tenure}a</span></div><div style="height:5px;border-radius:3px;background:var(--border);"><div style="height:5px;border-radius:3px;background:${COLORS.teal};width:${pct}%"></div></div></div>`;
+  });
+
+  // EB & CX
+  const eb = DATA.eb_cx;
+  const ebLabels = eb.map(d => fmtMonth(d.month));
+  const liPoints = eb.filter(d => d.linkedin_followers !== null);
+  makeChart('linkedinChart', { type:'line', data:{ labels:liPoints.map(d=>fmtMonth(d.month)), datasets:[{ label:'Followers', data:liPoints.map(d=>d.linkedin_followers), borderColor:COLORS.accent, backgroundColor:COLORS.accent+'22', fill:true, tension:0.3, pointRadius:3 }]}, options:{ ...baseChartOpts, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',callback:v=>v.toLocaleString('pt')} } } }});
+  makeChart('enpsChart', { type:'bar', data:{ labels:ebLabels, datasets:[
+    { label:'Reviews CX', data:eb.map(d=>d.reviews_cx), backgroundColor:COLORS.teal+'88', borderRadius:3, yAxisID:'y' },
+    { label:'eNPS Médio', data:eb.map(d=>d.enps_media), borderColor:COLORS.accent2, backgroundColor:'transparent', type:'line', tension:0.3, pointRadius:3, yAxisID:'y2' },
+  ]}, options:{ responsive:true, plugins:{ legend:{ display:true, position:'top', labels:{ font:{size:10}, usePointStyle:true } }, tooltip:{ mode:'index', intersect:false } }, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',stepSize:1} }, y2:{ position:'right', grid:{display:false}, ticks:{font:{size:10},color:'#94a3b8'} } } }});
+  const lastGD = eb.filter(d=>d.glassdoor_rate).pop();
+  if (lastGD) {
+    document.getElementById('glassdoorKpi').innerHTML = `<div style="font-size:28px;font-weight:800;color:${COLORS.green}">${lastGD.glassdoor_rate} ★</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${lastGD.glassdoor_reviews} reviews totais</div>`;
+  }
+  const gdPoints = eb.filter(d => d.glassdoor_reviews !== null);
+  makeChart('glassdoorChart', { type:'bar', data:{ labels:gdPoints.map(d=>fmtMonth(d.month)), datasets:[{ label:'Reviews', data:gdPoints.map(d=>d.glassdoor_reviews), backgroundColor:COLORS.green+'88', borderRadius:4 }]}, options:{ ...baseChartOpts, scales:{ x:{ grid:{display:false}, ticks:{font:{size:9},color:'#94a3b8',maxRotation:45} }, y:{ grid:{color:'#f1f5f9'}, ticks:{font:{size:10},color:'#94a3b8',stepSize:1} } } }});
+}
+
+(async () => {
+  try {
+    const DATA = await loadData();
+    buildCharts(DATA);
+    document.getElementById('loading-overlay').remove();
+  } catch(e) {
+    document.getElementById('loading-overlay').innerHTML = `<div style="font-size:18px;font-weight:700;margin-bottom:10px;">Erro ao carregar dados</div><div style="font-size:13px;opacity:0.7;max-width:400px;text-align:center;">${e.message}</div>`;
+  }
+})();
+</script>
+</body>
+</html>
